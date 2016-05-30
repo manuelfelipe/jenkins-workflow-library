@@ -11,8 +11,9 @@ def call(body) {
   def flow = new io.fabric8.Fabric8Commands()
   def repoId
   def releaseVersion
+  def extraStageImages = config.extraImagesToStage ?: []
 
-  kubernetes.pod('buildpod').withImage('fabric8/maven-builder:1.1')
+  kubernetes.pod('buildpod').withImage('fabric8/maven-builder:latest')
   .withPrivileged(true)
   .withHostPathMount('/var/run/docker.sock','/var/run/docker.sock')
   .withEnvVar('DOCKER_CONFIG','/root/.docker/')
@@ -41,8 +42,14 @@ def call(body) {
     if (!config.useGitTagForNextVersion){
       flow.updateGithub ()
     }
-
-    return [config.project, releaseVersion, repoId]
   }
 
+  if (config.extraImagesToStage != null){
+    stageExtraImages {
+      images = extraStageImages
+      tag = releaseVersion
+    }
+  }
+
+  return [config.project, releaseVersion, repoId]
 }
